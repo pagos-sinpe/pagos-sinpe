@@ -1246,14 +1246,15 @@ function mostrarQR(cobro) {
   const sinpeFormato = COMERCIO.numero_sinpe.slice(0,4)+'-'+COMERCIO.numero_sinpe.slice(4);
   document.getElementById('qr-sinpe-display').textContent = sinpeFormato;
 
-  const url = `${BASE_URL}?nombre=${encodeURIComponent(COMERCIO.nombre)}&monto=${cobro.monto}&desc=${encodeURIComponent(cobro.descripcion)}&numero=${COMERCIO.numero_sinpe}&emoji=${encodeURIComponent(COMERCIO.emoji)}&cobro_id=${cobro.id}`;
+  // URL corta — solo el cobro_id, el cliente busca el resto en Supabase
+  const url = `${BASE_URL}?id=${cobro.id}`;
 
   document.getElementById('qrcode').innerHTML = '';
   new QRCode(document.getElementById('qrcode'), {
     text: url,
     width: 220, height: 220,
     colorDark: '#111827', colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H
+    correctLevel: QRCode.CorrectLevel.M
   });
 
   showView('view-qr');
@@ -1284,7 +1285,7 @@ async function checkPago(cobroId) {
 // COMPARTIR
 // ══════════════════════════════════
 function getLinkCobro() {
-  return `${BASE_URL}?nombre=${encodeURIComponent(COMERCIO.nombre)}&monto=${currentCobro.monto}&desc=${encodeURIComponent(currentCobro.descripcion)}&numero=${COMERCIO.numero_sinpe}&emoji=${encodeURIComponent(COMERCIO.emoji)}&cobro_id=${currentCobro.id}`;
+  return `${BASE_URL}?id=${currentCobro.id}`;
 }
 
 function compartirWhatsApp() {
