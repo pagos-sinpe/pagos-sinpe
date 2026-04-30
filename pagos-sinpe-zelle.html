@@ -641,18 +641,51 @@
 const SUPABASE_URL = 'https://jvawoyukygobbkqrrfyq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YXdveXVreWdvYmJrcXJyZnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MDkzODQsImV4cCI6MjA5MzA4NTM4NH0.g4TElocHHp5BsRnXHJD6HGJAcRJm_FX-kIMfleCX-gw';
 
-const D = { nombre:'Soda La Esquina', emoji:'🍽️', monto:3500, desc:'Almuerzo del día', numero:'88881234', cobro_id: null };
+const D = { nombre:'', emoji:'🏪', monto:0, desc:'', numero:'', cobro_id: null };
 
-function init() {
+async function init() {
   const p = new URL(location.href).searchParams;
-  if (p.get('nombre'))   D.nombre   = p.get('nombre');
-  if (p.get('monto'))    D.monto    = +p.get('monto');
-  if (p.get('desc'))     D.desc     = p.get('desc');
-  if (p.get('numero'))   D.numero   = p.get('numero').replace(/\D/g,'');
-  if (p.get('emoji'))    D.emoji    = p.get('emoji');
-  if (p.get('cobro_id')) D.cobro_id = p.get('cobro_id');
-  const f = D.numero.slice(0,4)+'-'+D.numero.slice(4);
-  const m = D.monto.toLocaleString('es-CR');
+  const cobroId = p.get('id');
+
+  if (cobroId) {
+    // Cargar datos desde Supabase
+    try {
+      // Obtener cobro
+      const cobroRes = await fetch(`${SUPABASE_URL}/rest/v1/cobros?id=eq.${cobroId}&select=*`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const cobros = await cobroRes.json();
+      const cobro = cobros[0];
+      if (!cobro) { showToast('Cobro no encontrado'); return; }
+
+      // Obtener comercio
+      const comercioRes = await fetch(`${SUPABASE_URL}/rest/v1/comercios?id=eq.${cobro.comercio_id}&select=*`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const comercios = await comercioRes.json();
+      const comercio = comercios[0];
+
+      D.cobro_id = cobroId;
+      D.monto    = cobro.monto;
+      D.desc     = cobro.descripcion;
+      D.nombre   = comercio?.nombre || 'Comercio';
+      D.emoji    = comercio?.emoji  || '🏪';
+      D.numero   = comercio?.numero_sinpe || '';
+    } catch(e) {
+      console.error('Error cargando cobro:', e);
+    }
+  } else {
+    // Fallback parámetros legacy
+    if (p.get('nombre'))   D.nombre   = p.get('nombre');
+    if (p.get('monto'))    D.monto    = +p.get('monto');
+    if (p.get('desc'))     D.desc     = p.get('desc');
+    if (p.get('numero'))   D.numero   = p.get('numero').replace(/\D/g,'');
+    if (p.get('emoji'))    D.emoji    = p.get('emoji');
+    if (p.get('cobro_id')) D.cobro_id = p.get('cobro_id');
+  }
+
+  const f = D.numero ? D.numero.slice(0,4)+'-'+D.numero.slice(4) : '—';
+  const m = Number(D.monto).toLocaleString('es-CR');
   document.getElementById('av').textContent   = D.emoji;
   document.getElementById('nm').textContent   = D.nombre;
   document.getElementById('amt').textContent  = m;
